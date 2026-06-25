@@ -33,6 +33,8 @@ The demo covers the main agentic workflow:
 
 ## Architecture
 
+![Architecture diagram](docs/assets/architecture.svg)
+
 ```mermaid
 flowchart LR
   User[Support Agent] --> UI[React + TypeScript Console]
@@ -46,6 +48,33 @@ flowchart LR
   Agent --> API
   API --> UI
 ```
+
+## Agent Modes
+
+The default mode is deterministic and intentionally does not require API keys. It is useful for demos, CI, and tool-use evaluations because the exact tool trace is reproducible.
+
+Hosted LLM mode is optional:
+
+```powershell
+$env:AGENT_MODE="hosted_llm"
+$env:OPENAI_API_KEY="..."
+$env:OPENAI_MODEL="..."
+uvicorn app.main:app --reload --port 8000
+```
+
+In hosted mode, the backend sends CRM tool schemas to the OpenAI Responses API, executes requested CRM tools server-side, and sends tool outputs back for the final answer. Guardrails still run before the hosted call. Leave `AGENT_MODE` unset to use deterministic mode.
+
+## Optional SQLite Persistence
+
+By default, CRM data is seeded in memory. To persist CRM snapshots and audit mutation events locally:
+
+```powershell
+$env:CRM_STORAGE="sqlite"
+$env:CRM_SQLITE_PATH=".\data\crm_demo.sqlite"
+uvicorn app.main:app --reload --port 8000
+```
+
+The SQLite file is ignored by Git.
 
 ## Repository Layout
 
@@ -149,6 +178,14 @@ Coverage includes:
 - Complaint/escalation requests create a ticket.
 - Status-change requests call `update_case_status`.
 - Unsafe or out-of-scope requests are refused without touching CRM tools.
+- Prompt-injection attempts are blocked before tool execution.
+- Unknown customer IDs fail closed without mutation tools.
+- Refunds, credits, and account changes require human approval.
+- Hosted LLM mode fails closed unless API configuration is explicit.
+
+## CI
+
+GitHub Actions runs backend `pytest`, frontend `npm run typecheck`, and frontend `npm run build` on pushes and pull requests to `main`.
 
 ## Screenshots
 

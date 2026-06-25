@@ -1,8 +1,10 @@
 from __future__ import annotations
 
 from copy import deepcopy
-from dataclasses import dataclass, field
+from dataclasses import asdict, dataclass, field
 from typing import Literal
+
+from . import persistence
 
 CaseStatus = Literal["Open", "In Progress", "Waiting on Customer", "Resolved"]
 
@@ -113,6 +115,7 @@ CUSTOMERS: dict[str, Customer] = {
     ),
 }
 
+_SEED_CUSTOMERS = deepcopy(CUSTOMERS)
 _CASE_SEQUENCE = 800
 
 
@@ -141,6 +144,7 @@ def create_case(customer_id: str, title: str, priority: str, summary: str) -> Ca
     )
     CUSTOMERS[customer_id].cases.append(case)
     CUSTOMERS[customer_id].history.append(f"2026-06-25: Ticket {case.id} opened - {title}.")
+    _persist("case_created", {"case_id": case.id, "customer_id": customer_id})
     return deepcopy(case)
 
 
@@ -150,6 +154,7 @@ def update_case_status(case_id: str, status: CaseStatus) -> Case:
             if case.id == case_id:
                 case.status = status
                 customer.history.append(f"2026-06-25: {case.id} status changed to {status}.")
+                _persist("case_status_updated", {"case_id": case.id, "status": status})
                 return deepcopy(case)
     raise ValueError(f"Unknown case id: {case_id}")
 
@@ -158,6 +163,51 @@ def reset_demo_data() -> None:
     global CUSTOMERS, _CASE_SEQUENCE
     CUSTOMERS = deepcopy(_ORIGINAL_CUSTOMERS)
     _CASE_SEQUENCE = 800
+    _persist("demo_data_reset", {})
 
 
-_ORIGINAL_CUSTOMERS = deepcopy(CUSTOMERS)
+def _serialize_customers(customers: dict[str, Customer]) -> dict[str, dict]:
+    return {customer_id: asdict(customer) for customer_id, customer in customers.items()}
+
+
+def _hydrate_customers(payload: dict[str, dict]) -> dict[str, Customer]:
+    hydrated: dict[str, Customer] = {}
+    for customer_id, record in payload.items():
+        cases = [Case(**case) for case in record.get("cases", [])]
+        hydrated[customer_id] = Customer(
+            id=record["id"],
+            name=record["name"],
+            company=record["company"],
+            email=record["email"],
+            plan=record["plan"],
+            health_score=record["health_score"],
+            last_seen=record["last_seen"],
+            cases=cases,
+            history=record.get("history", []),
+        )
+    return hydrated
+
+
+def _persist(event_type: str, payload: dict) -> None:
+    persistence.save_customers(_serialize_customers(CUSTOMERS))
+    persistence.append_audit(event_type, payload)
+
+
+if persistence.enabled():
+    stored_customers = persistence.load_customers()
+    if stored_customers:
+        CUSTOMERS = _hydrate_customers(stored_customers)
+        _CASE_SEQUENCE = max(
+            [
+                int(case.id.split("-")[1])
+                for customer in CUSTOMERS.values()
+                for case in customer.cases
+                if case.id.startswith("case-") and case.id.split("-")[1].isdigit()
+            ]
+            or [_CASE_SEQUENCE]
+        )
+    else:
+        persistence.save_customers(_serialize_customers(CUSTOMERS))
+
+
+_ORIGINAL_CUSTOMERS = deepcopy(_SEED_CUSTOMERS)

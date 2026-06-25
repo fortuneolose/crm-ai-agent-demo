@@ -2,8 +2,10 @@ node_modules/
 .venv/
 __pycache__/
 .pytest_cache/
+backend/data/
 dist/
 *.log
+*.sqlite
 *.tsbuildinfo
 *.pyc
 .env

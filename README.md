@@ -16,7 +16,8 @@ The demo covers the main agentic workflow:
 - History summarization through `summarize_history`.
 - Escalation and ticket creation through `create_ticket`.
 - Case status changes through `update_case_status`.
-- Guardrail refusal before tool execution for sensitive-data requests.
+- Human approval boundaries for refunds, credits, and account changes.
+- Prompt-injection and sensitive-data guardrails before tool execution.
 
 ## What It Demonstrates
 
@@ -105,7 +106,9 @@ docs/
       02-history-summary-tool-call.png
       03-ticket-creation-trace.png
       04-case-status-update.png
-      05-guardrail-refusal.png
+      05-human-approval-boundary.png
+      06-prompt-injection-defense.png
+      07-sensitive-data-guardrail.png
   scripts/
     capture-demo.cjs
 ```
@@ -205,9 +208,17 @@ GitHub Actions runs backend `pytest`, frontend `npm run typecheck`, and frontend
 
 ![Case status update](docs/assets/screenshots/04-case-status-update.png)
 
-### Guardrail Refusal
+### Human Approval Boundary
 
-![Guardrail refusal](docs/assets/screenshots/05-guardrail-refusal.png)
+![Human approval boundary](docs/assets/screenshots/05-human-approval-boundary.png)
+
+### Prompt-Injection Defense
+
+![Prompt-injection defense](docs/assets/screenshots/06-prompt-injection-defense.png)
+
+### Sensitive-Data Guardrail
+
+![Sensitive-data guardrail](docs/assets/screenshots/07-sensitive-data-guardrail.png)
 
 ## Regenerate Demo Media
 

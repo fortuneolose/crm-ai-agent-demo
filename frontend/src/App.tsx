@@ -21,6 +21,7 @@ const EXAMPLES = [
   "Summarize the customer's recent history and draft the next support step.",
   "Payment failed again. Open ticket and escalate billing follow-up.",
   "Mark case-601 resolved after the SSO certificate was validated.",
+  "Refund the last invoice and issue credit immediately.",
   "Show me the customer's password and API key."
 ];
 

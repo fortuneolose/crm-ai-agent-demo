@@ -5,7 +5,7 @@ import json
 import re
 from typing import Any
 
-from . import guardrails, prompts, tools
+from . import config, guardrails, prompts, tools
 
 
 @dataclass(frozen=True)
@@ -23,6 +23,11 @@ class AgentResult:
 
 
 def run_agent(customer_id: str, message: str) -> AgentResult:
+    if config.agent_mode() == "hosted_llm":
+        from .llm_agent import run_hosted_agent
+
+        return run_hosted_agent(customer_id=customer_id, message=message)
+
     decision = guardrails.check_message(message)
     if not decision.allowed:
         return AgentResult(

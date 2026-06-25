@@ -70,3 +70,24 @@ def test_empty_request_is_rejected_without_tools():
 
     assert result.safety_status == "blocked_malformed_request"
     assert result.tool_calls == []
+
+
+def test_hosted_llm_mode_requires_explicit_openai_configuration(monkeypatch):
+    monkeypatch.setenv("AGENT_MODE", "hosted_llm")
+    monkeypatch.delenv("OPENAI_API_KEY", raising=False)
+    monkeypatch.delenv("OPENAI_MODEL", raising=False)
+
+    result = run_agent("cus-1001", "Summarize the customer history.")
+
+    assert result.safety_status == "blocked_missing_llm_config"
+    assert result.tool_calls == []
+    assert "OPENAI_API_KEY" in result.answer
+
+
+def test_deterministic_mode_remains_default(monkeypatch):
+    monkeypatch.delenv("AGENT_MODE", raising=False)
+
+    result = run_agent("cus-1001", "Summarize the customer history.")
+
+    assert result.safety_status == "allowed"
+    assert tool_names(result) == ["lookup_customer", "summarize_history"]

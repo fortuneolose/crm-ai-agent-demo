@@ -33,7 +33,14 @@ def run_agent(customer_id: str, message: str) -> AgentResult:
 
     normalized = message.lower()
     tool_calls: list[ToolCall] = []
-    customer = _call_tool(tool_calls, "lookup_customer", {"customer_id": customer_id})
+    try:
+        customer = _call_tool(tool_calls, "lookup_customer", {"customer_id": customer_id})
+    except ValueError:
+        return AgentResult(
+            answer="I cannot find that customer in the CRM. Please verify the customer id before taking action.",
+            safety_status="blocked_unknown_customer",
+            tool_calls=[],
+        )
 
     if _should_summarize(normalized):
         _call_tool(tool_calls, "summarize_history", {"customer_id": customer_id})

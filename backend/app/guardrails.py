@@ -28,9 +28,36 @@ OUT_OF_SCOPE_TERMS = {
     "investment advice",
 }
 
+PROMPT_INJECTION_TERMS = {
+    "ignore previous",
+    "ignore the previous",
+    "system prompt",
+    "developer message",
+    "bypass guardrails",
+    "reveal instructions",
+    "override your instructions",
+}
+
+HUMAN_APPROVAL_TERMS = {
+    "refund",
+    "cancel account",
+    "delete account",
+    "change plan",
+    "downgrade",
+    "upgrade subscription",
+    "issue credit",
+}
+
 
 def check_message(message: str) -> GuardrailDecision:
-    normalized = message.lower()
+    normalized = message.strip().lower()
+
+    if not normalized:
+        return GuardrailDecision(
+            allowed=False,
+            status="blocked_malformed_request",
+            reason="The request is empty or malformed.",
+        )
 
     for term in BLOCKED_TERMS:
         if term in normalized:
@@ -46,6 +73,22 @@ def check_message(message: str) -> GuardrailDecision:
                 allowed=False,
                 status="blocked_out_of_scope",
                 reason="The request is outside customer support scope.",
+            )
+
+    for term in PROMPT_INJECTION_TERMS:
+        if term in normalized:
+            return GuardrailDecision(
+                allowed=False,
+                status="blocked_prompt_injection",
+                reason="The request appears to be trying to bypass the agent instructions.",
+            )
+
+    for term in HUMAN_APPROVAL_TERMS:
+        if term in normalized:
+            return GuardrailDecision(
+                allowed=False,
+                status="requires_human_approval",
+                reason="Refunds, account changes, and credits require a human support owner.",
             )
 
     return GuardrailDecision(allowed=True, status="allowed", reason="Request is in support scope.")
